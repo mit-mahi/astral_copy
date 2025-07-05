@@ -99,19 +99,88 @@ with tabs[0]:
 # ========== TAB 2: Live Cosmic Ray Shower Map ==========
 with tabs[1]:
     st.subheader("Live Cosmic Ray Shower Map")
+   
     st.info("Map currently shows **mock shower data**. Live data from observatories coming soon!")
-    m = folium.Map(location=[20, 0], zoom_start=2, tiles="https://stamen-tiles.a.ssl.fastly.net/terrain/{z}/{x}/{y}.png",
-                   attr="Map tiles by Stamen Design, under CC BY 3.0. Data by OpenStreetMap, under ODbL.")
-    for _ in range(25):
-        lat, lon = random.uniform(-60, 60), random.uniform(-180, 180)
-        intensity = random.choice(['Low', 'Moderate', 'High'])
-        color = {'Low': 'green', 'Moderate': 'orange', 'High': 'red'}[intensity]
-        folium.CircleMarker(location=[lat, lon], radius=6, popup=f"Shower\nIntensity: {intensity}", color=color,
-                            fill=True, fill_opacity=0.7).add_to(m)
-    st_folium(m, width=700)
-    st.caption("Simulated data. Future version will include real-time showers from cosmic ray arrays.")
+    data = pd.read_csv("data/mock_cosmic_shower_data.csv")
+    data["date"] = pd.to_datetime(data["date"])
 
-# Tab 3: Biological Effects
+    # ======UI Filters======
+    st.markdown("### 🔍 Filter Shower Events")
+
+    intensity_filter = st.multiselect(
+        "Select intensity levels to display",
+        options=["Low", "Moderate", "High"],
+        default=["Low", "Moderate", "High"]
+    )
+
+    hemisphere_filter = st.selectbox(
+        "Choose Hemisphere",
+        options=["Both", "Northern", "Southern"]
+    )
+
+    min_date, max_date = data["date"].min(), data["date"].max()
+    date_range = st.date_input("Select date range", [min_date, max_date])
+
+    # =====Filter data=====
+    
+    filtered_data = data[data["intensity"].isin(intensity_filter)]
+
+    if hemisphere_filter == "Northern":
+        filtered_data = filtered_data[filtered_data["latitude"] > 0]
+    elif hemisphere_filter == "Southern":
+        filtered_data = filtered_data[filtered_data["latitude"] < 0]
+
+    start_date, end_date = pd.to_datetime(date_range[0]), pd.to_datetime(date_range[1])
+    filtered_data = filtered_data[
+        (filtered_data["date"] >= start_date) & (filtered_data["date"] <= end_date)
+    ]
+
+    # =====Create the map====
+    m = folium.Map(
+        location=[20, 0],
+        zoom_start=2,
+        tiles="https://stamen-tiles.a.ssl.fastly.net/terrain/{z}/{x}/{y}.png",
+        attr="Map tiles by Stamen Design, under CC BY 3.0. Data by OpenStreetMap, under ODbL."
+    )
+
+    # =====Plot filtered markers=====
+    color_map = {'Low': 'green', 'Moderate': 'orange', 'High': 'red'}
+
+    for _, row in filtered_data.iterrows():
+        folium.CircleMarker(
+            location=[row["latitude"], row["longitude"]],
+            radius=6,
+            popup=f"{row['date'].date()} — Intensity: {row['intensity']}",
+            color=color_map[row["intensity"]],
+            fill=True,
+            fill_opacity=0.7
+        ).add_to(m)
+
+    # ====Show the map=====
+    st_folium(m, width=700)
+
+    # Legend + caption
+    with st.expander("🗺️ Legend"):
+        st.markdown("""
+        - 🟢 **Low Intensity**
+        - 🟠 **Moderate Intensity**
+        - 🔴 **High Intensity**
+        """)
+
+    st.caption("Mock cosmic ray data used for demonstration. Real detector-based updates will be integrated soon.")
+
+  #  m = folium.Map(location=[20, 0], zoom_start=2, tiles="https://stamen-tiles.a.ssl.fastly.net/terrain/{z}/{x}/{y}.png",
+   #                attr="Map tiles by Stamen Design, under CC BY 3.0. Data by OpenStreetMap, under ODbL.")
+  #  for _ in range(25):
+   #     lat, lon = random.uniform(-60, 60), random.uniform(-180, 180)
+   #     intensity = random.choice(['Low', 'Moderate', 'High'])
+   #     color = {'Low': 'green', 'Moderate': 'orange', 'High': 'red'}[intensity]
+    #    folium.CircleMarker(location=[lat, lon], radius=6, popup=f"Shower\nIntensity: {intensity}", color=color,
+   #                         fill=True, fill_opacity=0.7).add_to(m)
+ #   st_folium(m, width=700)
+ #   st.caption("Simulated data. Future version will include real-time showers from cosmic ray arrays.")
+
+# =====================Tab 3: Biological Effects======================
 with tabs[2]:
     import os
     from pathlib import Path
