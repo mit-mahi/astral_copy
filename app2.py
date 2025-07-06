@@ -134,6 +134,8 @@ with tabs[1]:
     latest_time = latest["TimeStamp"]    
     station_counts= latest.drop("TimeStamp").to_dict()
 
+    st.write("Station counts (latest row):", station_counts)
+
     # ===color based on intensity===
     def get_color(count):
         if count > 5500:
