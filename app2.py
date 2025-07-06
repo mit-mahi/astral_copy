@@ -117,22 +117,22 @@ with tabs[1]:
     nmdb_url = "http://nest.nmdb.eu/draw_graph.php?formchk=1&stations[]=ICRB&stations[]=ICRO&stations[]=ATHN&stations[]=CALM&stations[]=AATB&stations[]=BKSN&stations[]=JUNG&stations[]=JUNG1&stations[]=LMKS&stations[]=DRBS&stations[]=KIEL2&stations[]=YKTK&stations[]=KERG&stations[]=CALG&stations[]=OULU&stations[]=APTY&stations[]=TXBY&stations[]=FSMT&stations[]=INVK&stations[]=NAIN&stations[]=PWNK&stations[]=THUL&stations[]=MWSB&stations[]=MWSN&stations[]=SOPB&stations[]=SOPO&stations[]=TERA&tabchoice=revori&dtype=corr_for_pressure&tresolution=60&yunits=1&date_choice=last&last_days=59&last_label=days_label&output=ascii"
 
     def fetch_nmdb_multi_station(url):
-    try:
-        response = requests.get(url)
-        response.raise_for_status()
+        try:
+            response = requests.get(url)
+            response.raise_for_status()
 
-        # Find where the actual data starts (header with DATE)
-        lines = response.text.splitlines()
-        header_index = next(i for i, line in enumerate(lines) if line.startswith("DATE"))
-        csv_data = "\n".join(lines[header_index:])
+            # Find where the actual data starts (header with DATE)
+            lines = response.text.splitlines()
+            header_index = next(i for i, line in enumerate(lines) if line.startswith("DATE"))
+            csv_data = "\n".join(lines[header_index:])
 
-        df = pd.read_csv(StringIO(csv_data), sep=";")
-        df.columns = ["date", "time", "station", "count", "error", "flag"]
-        df["datetime"] = pd.to_datetime(df["date"] + " " + df["time"])
-        return df
-    except Exception as e:
-        st.error(f"Error fetching NMDB data: {e}")
-        return None
+            df = pd.read_csv(StringIO(csv_data), sep=";")
+            df.columns = ["date", "time", "station", "count", "error", "flag"]
+            df["datetime"] = pd.to_datetime(df["date"] + " " + df["time"])
+            return df
+        except Exception as e:
+            st.error(f"Error fetching NMDB data: {e}")
+            return None
 
     df = fetch_nmdb_multi_station(nmdb_url)
 
