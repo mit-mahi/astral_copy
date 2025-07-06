@@ -132,7 +132,7 @@ with tabs[1]:
             return df
         except Exception as e:
             st.error(f"Error fetching NMDB data: {e}")
-            return None
+        return None
     if df is not None:
         st.success(f"Fetched {len(df)} data points from NMDB!")
     else:
