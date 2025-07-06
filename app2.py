@@ -108,15 +108,7 @@ with tabs[1]:
     )
     
     # ===plot the map===
-    m = folium.Map(location=[0, 0], zoom_start=2, tiles="CartoDB positron")
-
-    # ===plotting points===
-    #for _ in range(25):
-        #lat, lon = random.uniform(-60, 60), random.uniform(-180, 180)
-        #intensity = random.choice(['Low', 'Moderate', 'High'])
-        #color = {'Low': 'green', 'Moderate': 'orange', 'High': 'red'}[intensity]
-        #folium.CircleMarker(location=[lat, lon], radius=6, popup=f"Shower: {intensity}", color=color,
-                            #fill=True, fill_opacity=0.7).add_to(m)
+    m = folium.Map(location=[0, 0], zoom_start=2, tiles="CartoDB positron"
 
     # ===fetch data===
     data_data= pd.read_csv("TimeStamp.csv")
@@ -127,12 +119,11 @@ with tabs[1]:
     for col in data_data.columns:
         if col != "TimeStamp":
             data_data[col] = pd.to_numeric(data_data[col], errors="coerce")
-    #data_data = data_data.astype({col: 'float' for col in data_data.columns if col != "TimeStamp"})
     latest = data_data.iloc[-1]
     latest_time = latest["TimeStamp"]    
     station_counts= latest.drop("TimeStamp").to_dict()
 
-    #st.write("Station counts (latest row):", station_counts)
+    st.write("Station counts (latest row):", station_counts)
 
     # ===color based on intensity===
     def get_color(count):
@@ -174,6 +165,7 @@ with tabs[1]:
     "    SOPO": (-90.0, 0.0),
     "    TERA": (-66.67, 140.01),
     }
+    
     # ===plotting on map===
     for station, count in station_counts.items():
         if station in station_coords and pd.notna(count):
@@ -192,16 +184,13 @@ with tabs[1]:
     folium_static(m)
 
     for station, count in station_counts.items():
+        lat, lon = station_coords[station]
         if station not in station_coords:
             st.write(f"❌ Skipped (no coordinates): {station}")
         elif pd.isna(count):
             st.write(f"⚠️ Skipped (no data): {station}")
         else:
-            st.write(f"✅ Plotted: {station}")
-
-    missing_coords = [s for s in station_counts if s not in station_coords]
-    st.write("❌ Missing coordinates for:", missing_coords)
-        # Add marker here
+            st.write(f"✅ Plotted: {station} at ({lat}, {lon})")
     
 # Tab 3: Biological Effects
 with tabs[2]:
