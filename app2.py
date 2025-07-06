@@ -8,6 +8,9 @@ import folium
 import random
 from streamlit_folium import folium_static
 import plotly.graph_objects as go
+#added
+from io import StringIO
+
 
 # App configuration
 st.set_page_config(
@@ -92,9 +95,12 @@ with tabs[0]:
     ax2.set_ylabel("Number of Astronauts")
     st.pyplot(fig2)
 
-# TAB 2: Live Cosmic Ray Shower Map (mock)
+# =================TAB 2: Live Cosmic Ray Shower Map (mock)=================
 with tabs[1]:
     st.subheader("Live Cosmic Ray Shower Map")
+
+    
+    # ====intensity filter====
     st.markdown("### 🔍 Filter Shower Events")
     intensity_filter = st.multiselect(
         "Select intensity levels to display",
@@ -102,13 +108,65 @@ with tabs[1]:
         default=["Low", "Moderate", "High"]
     )
 
+    
+    # ===plot the map===
     m = folium.Map(location=[0, 0], zoom_start=2, tiles="CartoDB positron")
+
+
+    # ===fetching the data===
+    nmdb_url = "http://nest.nmdb.eu/draw_graph.php?formchk=1&stations[]=ICRB&stations[]=ICRO&stations[]=ATHN&stations[]=CALM&stations[]=AATB&stations[]=BKSN&stations[]=JUNG&stations[]=JUNG1&stations[]=LMKS&stations[]=DRBS&stations[]=KIEL2&stations[]=YKTK&stations[]=KERG&stations[]=CALG&stations[]=OULU&stations[]=APTY&stations[]=TXBY&stations[]=FSMT&stations[]=INVK&stations[]=NAIN&stations[]=PWNK&stations[]=THUL&stations[]=MWSB&stations[]=MWSN&stations[]=SOPB&stations[]=SOPO&stations[]=TERA&tabchoice=revori&dtype=corr_for_pressure&tresolution=60&yunits=1&date_choice=last&last_days=59&last_label=days_label&output=ascii"
+
+    def fetch_nmdb_multi_station(url):
+    try:
+        response = requests.get(url)
+        response.raise_for_status()
+
+        # Find where the actual data starts (header with DATE)
+        lines = response.text.splitlines()
+        header_index = next(i for i, line in enumerate(lines) if line.startswith("DATE"))
+        csv_data = "\n".join(lines[header_index:])
+
+        df = pd.read_csv(StringIO(csv_data), sep=";")
+        df.columns = ["date", "time", "station", "count", "error", "flag"]
+        df["datetime"] = pd.to_datetime(df["date"] + " " + df["time"])
+        return df
+    except Exception as e:
+        st.error(f"Error fetching NMDB data: {e}")
+        return None
+
+    df = fetch_nmdb_multi_station(nmdb_url)
+
+#######
+
+if df is not None:
+    st.success(f"Fetched {len(df)} data points from NMDB!")
+    
+    # Optional: Filter to recent stations or highest activity
+    recent = df[df["datetime"] > pd.Timestamp.now() - pd.Timedelta("3 days")]
+
+    st.dataframe(recent.head())
+
+    # Optional: Plot counts for 1 or more stations
+    import plotly.express as px
+    fig = px.line(recent, x="datetime", y="count", color="station",
+                  title="Cosmic Ray Count (Pressure Corrected) – 1-hour Resolution")
+    st.plotly_chart(fig, use_container_width=True)
+else:
+    st.warning("No live data available. Using fallback if needed.")
+
+    
+######
+    
+    st.write("NMDB DataFrame shape:", df.shape)
+
+    # ===plotting points===
     for _ in range(25):
         lat, lon = random.uniform(-60, 60), random.uniform(-180, 180)
         intensity = random.choice(['Low', 'Moderate', 'High'])
         color = {'Low': 'green', 'Moderate': 'orange', 'High': 'red'}[intensity]
         folium.CircleMarker(location=[lat, lon], radius=6, popup=f"Shower: {intensity}", color=color,
                             fill=True, fill_opacity=0.7).add_to(m)
+    # ===show map===
     folium_static(m)
 
 # Tab 3: Biological Effects
