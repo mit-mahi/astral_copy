@@ -198,6 +198,9 @@ with tabs[1]:
             st.write(f"⚠️ Skipped (no data): {station}")
         else:
             st.write(f"✅ Plotted: {station}")
+
+    missing_coords = [s for s in station_counts if s not in station_coords]
+    st.write("❌ Missing coordinates for:", missing_coords)
         # Add marker here
     
 # Tab 3: Biological Effects
