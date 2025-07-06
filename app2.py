@@ -133,6 +133,21 @@ with tabs[1]:
         except Exception as e:
             st.error(f"Error fetching NMDB data: {e}")
             return None
+    if df is not None:
+    st.success(f"Fetched {len(df)} data points from NMDB!")
+    
+    # Optional: Filter to recent stations or highest activity
+    recent = def[def["datetime"] > pd.Timestamp.now() - pd.Timedelta("3 days")]
+
+    st.dataframe(recent.head())
+
+    # Optional: Plot counts for 1 or more stations
+    import plotly.express as px
+    fig = px.line(recent, x="datetime", y="count", color="station",
+                  title="Cosmic Ray Count (Pressure Corrected) – 1-hour Resolution")
+    st.plotly_chart(fig, use_container_width=True)
+    else:
+        st.warning("No live data available. Using fallback if needed.")
 
     df = fetch_nmdb_multi_station(nmdb_url)
 
