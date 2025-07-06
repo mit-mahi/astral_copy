@@ -126,14 +126,14 @@ with tabs[1]:
     #st.write("Station counts (latest row):", station_counts)
 
     def get_intensity_level(count):
-    if pd.isna(count):
-        return "No Data"
-    elif count > 200:
-        return "High"
-    elif count > 200 and cout < 100:
-        return "Moderate"
-    else:
-        return "Low"
+        if pd.isna(count):
+            return "No Data"
+        elif count > 200:
+            return "High"
+        elif count > 200 and cout < 100:
+            return "Moderate"
+        else:
+            return "Low"
     # ===color based on intensity===
     def get_color(count):
         if count > 200:
