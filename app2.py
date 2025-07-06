@@ -99,16 +99,7 @@ with tabs[0]:
 with tabs[1]:
     st.subheader("Live Cosmic Ray Shower Map")
 
-    df = pd.read_csv("data/realtime_sort.txt", sep=";", comment="#", header=None)  # Since it's already comma-separated
     
-    # Add column names
-    df.columns = ["Timestamp", "Station", "Value"]
-
-    # Save as CSV
-    df.to_csv("data/realtime_sort.csv", index=False)
-
-    df = pd.read_csv("data/realtime_sort.csv")  # Load the saved CSV
-    print(df.head())  # Display first 5 rows
     
     # ====intensity filter====
     st.markdown("### 🔍 Filter Shower Events")
@@ -122,18 +113,81 @@ with tabs[1]:
     m = folium.Map(location=[0, 0], zoom_start=2, tiles="CartoDB positron")
 
     # ===plotting points===
-    for _ in range(25):
-        lat, lon = random.uniform(-60, 60), random.uniform(-180, 180)
-        intensity = random.choice(['Low', 'Moderate', 'High'])
-        color = {'Low': 'green', 'Moderate': 'orange', 'High': 'red'}[intensity]
-        folium.CircleMarker(location=[lat, lon], radius=6, popup=f"Shower: {intensity}", color=color,
-                            fill=True, fill_opacity=0.7).add_to(m)
+    #for _ in range(25):
+        #lat, lon = random.uniform(-60, 60), random.uniform(-180, 180)
+        #intensity = random.choice(['Low', 'Moderate', 'High'])
+        #color = {'Low': 'green', 'Moderate': 'orange', 'High': 'red'}[intensity]
+        #folium.CircleMarker(location=[lat, lon], radius=6, popup=f"Shower: {intensity}", color=color,
+                            #fill=True, fill_opacity=0.7).add_to(m)
+
+    # ===fetch data===
+    data_data= pd.read_csv("TimeStamp.csv")
+
+    # ===Process it===
+    data_data.replace("null", pd.NA, inplace=True)
+    data_data["TimeStamp"] = pd.to_datetime(data_data["TimeStamp"])
+    data_data = data_data.astype({col: 'float' for col in data_data.columns if col != "TimeStamp"})
+    latest = data_data.iloc[-1]
+    latest_time = latest["TimeStamp"]    
+    station_counts= atest.drop("TimeStamp").to_dict()
+
+    # ===color based on intensity===
+    def get_color(count):
+        if count > 5500:
+        return 'red'
+    elif count > 5000:
+        return 'orange'
+    else:
+        return 'green'
+
+    # ===plotting points===
+    station_coords = {
+    "ICRB": (28.3, -16.51),
+    "ICRO": (28.3, -16.51),
+    "ATHN": (37.98, 23.73),
+    "CALM": (39.2, -3.2),
+    "BKSN": (43.28, 42.69),
+    "JUNG": (46.55, 7.98),
+    "JUNG1": (46.55, 7.98),
+    "LMKS": (49.2, 20.22),
+    "IRK2": (52.3, 104.3),
+    "DRBS": (50.1, 4.6),
+    "NEWK": (39.68, -75.75),
+    "KIEL2": (54.32, 10.13),
+    "YKTK": (62.02, 129.7),
+    "KERG": (-49.35, 70.25),
+    "CALG": (51.05, -114.07),
+    "OULU": (65.05, 25.47),
+    "APTY": (67.57, 33.38),
+    "TXBY": (71.58, 128.92),
+    "FSMT": (60.02, -111.93),
+    "INVK": (68.36, -133.72),
+    "NAIN": (56.55, -61.68),
+    "PWNK": (54.98, -85.43),
+    "THUL": (76.51, -68.71),
+    "MWSB": (-67.6, 62.88),
+    "MWSN": (-67.6, 62.88),
+    "SOPB": (-90.0, 0.0),
+    "SOPO": (-90.0, 0.0),
+    "TERA": (-66.67, 140.01),
+    }
+
+    # ===plotting on map===
+    for station, count in station_counts.(items):
+        if station in station_coords and pd.notna(count):
+            lat, lon = station_coords[station]
+            color = get_color(count)
+            folium.CircleMarker(
+                location=[lat, lon],
+                radius=7,
+                color=color,
+                popup=f"{station}\n{count}\ndate\ntime",
+                fill=True,
+                fill_opacity=0.7
+            ).add_to(m)
 
     # ===show map===
     folium_static(m)
-
-    df = pd.read_csv("data/realtime_sort.csv")  # Load the saved CSV
-    print(df.head())  # Display first 5 rows
     
 # Tab 3: Biological Effects
 with tabs[2]:
