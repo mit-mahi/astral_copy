@@ -95,6 +95,7 @@ with tabs[0]:
 # TAB 2: Live Cosmic Ray Shower Map (mock)
 with tabs[1]:
     st.subheader("Live Cosmic Ray Shower Map")
+    st.markdown("### 🔍 Filter Shower Events")
     m = folium.Map(location=[0, 0], zoom_start=2, tiles="CartoDB positron")
     for _ in range(25):
         lat, lon = random.uniform(-60, 60), random.uniform(-180, 180)
