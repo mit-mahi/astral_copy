@@ -108,7 +108,7 @@ with tabs[1]:
     )
     
     # ===plot the map===
-    m = folium.Map(location=[0, 0], zoom_start=2, tiles="CartoDB positron"
+    m = folium.Map(location=[0, 0], zoom_start=2, tiles="CartoDB positron")
 
     # ===fetch data===
     data_data= pd.read_csv("TimeStamp.csv")
