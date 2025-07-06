@@ -126,7 +126,10 @@ with tabs[1]:
     # ===Process it===
     data_data.replace("null", pd.NA, inplace=True)
     data_data["TimeStamp"] = pd.to_datetime(data_data["TimeStamp"])
-    data_data = data_data.astype({col: 'float' for col in data_data.columns if col != "TimeStamp"})
+    for col in data_data.columns:
+        if col != "TimeStamp":
+            data_data[col] = pd.to_numeric(data_data[col], errors="coerce")
+    #data_data = data_data.astype({col: 'float' for col in data_data.columns if col != "TimeStamp"})
     latest = data_data.iloc[-1]
     latest_time = latest["TimeStamp"]    
     station_counts= atest.drop("TimeStamp").to_dict()
