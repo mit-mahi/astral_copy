@@ -112,43 +112,7 @@ with tabs[1]:
     # ===plot the map===
     m = folium.Map(location=[0, 0], zoom_start=2, tiles="CartoDB positron")
 
-     # ===show map===
-    folium_static(m)
-
-    # ===fetching the data===
-    #nmdb_url = "http://nest.nmdb.eu/draw_graph.php?formchk=1&stations[]=ICRB&stations[]=ICRO&stations[]=ATHN&stations[]=CALM&stations[]=AATB&stations[]=BKSN&stations[]=JUNG&stations[]=JUNG1&stations[]=LMKS&stations[]=DRBS&stations[]=KIEL2&stations[]=YKTK&stations[]=KERG&stations[]=CALG&stations[]=OULU&stations[]=APTY&stations[]=TXBY&stations[]=FSMT&stations[]=INVK&stations[]=NAIN&stations[]=PWNK&stations[]=THUL&stations[]=MWSB&stations[]=MWSN&stations[]=SOPB&stations[]=SOPO&stations[]=TERA&tabchoice=revori&dtype=corr_for_pressure&tresolution=60&yunits=1&date_choice=last&last_days=59&last_label=days_label&output=ascii"
-
-    def fetch_nmdb_multi_station(url):
-        try:
-            response = requests.get(url)
-            response.raise_for_status()
-
-            # Find where the actual data starts (header with DATE)
-            lines = response.text.splitlines()
-            header_index = next(i for i, line in enumerate(lines) if line.startswith("DATE"))
-            csv_data = "\n".join(lines[header_index:])
-
-            df = pd.read_csv(StringIO(csv_data), sep=";")
-            df.columns = ["date", "time", "station", "count", "error", "flag"]
-            df["datetime"] = pd.to_datetime(df["date"] + " " + df["time"])
-            return df
-        except Exception as e:
-            st.error(f"Error fetching NMDB data: {e}")
-            return None
-    if df is not None:
-        st.success(f"Fetched {len(df)} data points from NMDB!")
-    else:
-        st.warning("No live data available. Using fallback if needed.")
-
-    df = fetch_nmdb_multi_station(nmdb_url)
-
-#######
-
-
-    
-######
-    
-    st.write("NMDB DataFrame shape:", df.shape)
+ 
 
     # ===plotting points===
     for _ in range(25):
@@ -157,6 +121,11 @@ with tabs[1]:
         color = {'Low': 'green', 'Moderate': 'orange', 'High': 'red'}[intensity]
         folium.CircleMarker(location=[lat, lon], radius=6, popup=f"Shower: {intensity}", color=color,
                             fill=True, fill_opacity=0.7).add_to(m)
+
+    # ===show map===
+    folium_static(m)
+
+
    
 
 # Tab 3: Biological Effects
