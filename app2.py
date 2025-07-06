@@ -1,16 +1,13 @@
 import streamlit as st
-import datetime
+from datetime import datetime
 import requests
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import folium
 import random
-from streamlit_folium import st_folium
-import os
-from pathlib import Path
+from streamlit_folium import folium_static
 import plotly.graph_objects as go
-
 
 # App configuration
 st.set_page_config(
@@ -19,15 +16,21 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# Caching API requests to avoid continuous refresh
+@st.cache_data(ttl=300)
+def fetch_json(url):
+    try:
+        return requests.get(url).json()
+    except:
+        return None
+
 # Title
 st.title("Cosmic Radiation Research Dashboard")
 
 # Intro section on homepage
 st.markdown("""
 Welcome to the **Cosmic Radiation Research Dashboard** — an interactive platform to explore real-time and simulated data on cosmic rays, their biological and technological effects, and mission safety.
-
 ---
-
 **Select a feature tab below to begin your research:**
 """)
 
@@ -44,22 +47,20 @@ tabs = st.tabs([
     "Upload & Analyze Your Data"
 ])
 
-# ========== TAB 1: Radiation Risk Calculator ==========
+# === TAB 1: Radiation Risk Calculator ===
 with tabs[0]:
     st.subheader("Radiation Risk Calculator")
-    st.info("This tool estimates the radiation dose and cancer risk for a space mission based on real-time solar particle flux and selected shielding.")
     mission_days = st.slider("Mission Duration (days)", 1, 1000, 180)
     shielding_material = st.selectbox("Shielding Material", ["None", "Aluminum", "Polyethylene"])
 
-    url = "https://services.swpc.noaa.gov/json/goes/primary/integral-protons-3-day.json"
-    try:
-        data = requests.get(url).json()
+    data = fetch_json("https://services.swpc.noaa.gov/json/goes/primary/integral-protons-3-day.json")
+    if data:
         df = pd.DataFrame(data)
         df['time_tag'] = pd.to_datetime(df['time_tag'])
         df['flux'] = pd.to_numeric(df['flux'], errors='coerce')
-        flux=df['flux'].iloc[-1]
+        flux = df['flux'].iloc[-1]
         st.success(f"Live Proton Flux (≥10 MeV): {flux:.2e} protons/cm²/s/sr")
-    except:
+    else:
         flux = 100
         st.warning("Unable to fetch live data. Using default flux: 100 p/cm²/s/sr")
 
@@ -69,9 +70,8 @@ with tabs[0]:
     total_dose = daily_dose * mission_days
     risk_percent = (total_dose / 1000) * 5
 
-    st.metric("☢️ Estimated Total Dose (mSv)", f"{total_dose:.2f}")
-    st.metric("⚠️ Estimated Cancer Risk", f"{risk_percent:.2f} %")
-    st.caption("ICRP model: 5% risk increase per 1 Sv of exposure. Not for clinical use.")
+    st.metric("☢️ Estimated Total Dose (mSv)", f"{total_dose:.5f}")
+    st.metric("⚠️ Estimated Cancer Risk", f"{risk_percent:.5f} %")
 
     st.subheader("Dose Accumulation Over Time")
     days = np.arange(1, mission_days + 1)
@@ -92,90 +92,19 @@ with tabs[0]:
     ax2.set_ylabel("Number of Astronauts")
     st.pyplot(fig2)
 
-    st.subheader("Shielding Material Effectiveness")
-    df = pd.DataFrame({"Material": ["None", "Aluminum", "Polyethylene"], "Approx. Dose Reduction (%)": [0, 30, 50]})
-    st.dataframe(df)
-
-# ========== TAB 2: Live Cosmic Ray Shower Map ==========
+# TAB 2: Live Cosmic Ray Shower Map (mock)
 with tabs[1]:
     st.subheader("Live Cosmic Ray Shower Map")
-   
-    st.info("Map currently shows **mock shower data**. Live data from observatories coming soon!")
-    data = pd.read_csv("data/mock_cosmic_shower_data.csv")
-    data["date"] = pd.to_datetime(data["date"])
-
-    # ======UI Filters======
-    st.markdown("### 🔍 Filter Shower Events")
-
-    intensity_filter = st.multiselect(
-        "Select intensity levels to display",
-        options=["Low", "Moderate", "High"],
-        default=["Low", "Moderate", "High"]
-    )
-
-    hemisphere_filter = st.selectbox(
-        "Choose Hemisphere",
-        options=["Both", "Northern", "Southern"]
-    )
-
-    min_date, max_date = data["date"].min(), data["date"].max()
-    date_range = st.date_input("Select date range", [min_date, max_date])
-
-    # =====Filter data=====
-    
-    filtered_data = data[data["intensity"].isin(intensity_filter)]
-
-    if hemisphere_filter == "Northern":
-        filtered_data = filtered_data[filtered_data["latitude"] > 0]
-    elif hemisphere_filter == "Southern":
-        filtered_data = filtered_data[filtered_data["latitude"] < 0]
-
-    start_date, end_date = pd.to_datetime(date_range[0]), pd.to_datetime(date_range[1])
-    filtered_data = filtered_data[
-        (filtered_data["date"] >= start_date) & (filtered_data["date"] <= end_date)
-    ]
-
-    # =====Create the map====
     m = folium.Map(location=[0, 0], zoom_start=2, tiles="CartoDB positron")
+    for _ in range(25):
+        lat, lon = random.uniform(-60, 60), random.uniform(-180, 180)
+        intensity = random.choice(['Low', 'Moderate', 'High'])
+        color = {'Low': 'green', 'Moderate': 'orange', 'High': 'red'}[intensity]
+        folium.CircleMarker(location=[lat, lon], radius=6, popup=f"Shower: {intensity}", color=color,
+                            fill=True, fill_opacity=0.7).add_to(m)
+    folium_static(m)
 
-    # =====Plot filtered markers=====
-    color_map = {'Low': 'green', 'Moderate': 'orange', 'High': 'red'}
-
-    for _, row in filtered_data.iterrows():
-        folium.CircleMarker(
-            location=[row["latitude"], row["longitude"]],
-            radius=6,
-            popup=f"{row['date'].date()} — Intensity: {row['intensity']}",
-            color=color_map[row["intensity"]],
-            fill=True,
-            fill_opacity=0.7
-        ).add_to(m)
-
-    # ====Show the map=====
-    st_folium(m, width=700)
-
-    # Legend + caption
-    with st.expander("🗺️ Legend"):
-        st.markdown("""
-        - 🟢 **Low Intensity**
-        - 🟠 **Moderate Intensity**
-        - 🔴 **High Intensity**
-        """)
-
-    st.caption("Mock cosmic ray data used for demonstration. Real detector-based updates will be integrated soon.")
-
-  #  m = folium.Map(location=[20, 0], zoom_start=2, tiles="https://stamen-tiles.a.ssl.fastly.net/terrain/{z}/{x}/{y}.png",
-   #                attr="Map tiles by Stamen Design, under CC BY 3.0. Data by OpenStreetMap, under ODbL.")
-  #  for _ in range(25):
-   #     lat, lon = random.uniform(-60, 60), random.uniform(-180, 180)
-   #     intensity = random.choice(['Low', 'Moderate', 'High'])
-   #     color = {'Low': 'green', 'Moderate': 'orange', 'High': 'red'}[intensity]
-    #    folium.CircleMarker(location=[lat, lon], radius=6, popup=f"Shower\nIntensity: {intensity}", color=color,
-   #                         fill=True, fill_opacity=0.7).add_to(m)
- #   st_folium(m, width=700)
- #   st.caption("Simulated data. Future version will include real-time showers from cosmic ray arrays.")
-
-# =====================Tab 3: Biological Effects======================
+# Tab 3: Biological Effects
 with tabs[2]:
     import os
     from pathlib import Path
@@ -253,18 +182,14 @@ with tabs[2]:
         st.caption("Disclaimer: Conceptual illustration only.")
     except Exception as e:
         st.error(f"Could not load image: {e}\nCheck that 'images' folder exists alongside this script and contains {img_file}.")
-
-    # Interactive Risk chart
-    st.subheader("📊 Interactive Risk Severity Chart")
-
-    # Define thresholds and labels
+    
+        st.subheader("📊 Interactive Risk Severity Chart")
+    
     thresholds = [0, 1, 5, 15, 30, 50]
     labels = ["None", "Minor", "Mild ARS", "Severe ARS", "Lethal", "Extreme/Fatal"]
     colors = ["#2ecc71", "#f1c40f", "#f39c12", "#e67e22", "#e74c3c"]
-
-    # Create Plotly figure
+    
     fig = go.Figure()
-    # Background zones
     for i in range(len(thresholds) - 1):
         fig.add_shape(
             type="rect",
@@ -272,11 +197,10 @@ with tabs[2]:
             fillcolor=colors[i], opacity=0.3, layer="below", line_width=0
         )
         fig.add_annotation(
-            x=(thresholds[i]+thresholds[i+1]) / 2, y=0.95,
+            x=(thresholds[i]+thresholds[i+1])/2, y=0.95,
             text=labels[i], showarrow=False, font=dict(size=12), opacity=0.8
         )
-
-    # Plot markers: raw dose and adjusted dose
+    
     fig.add_trace(go.Scatter(
         x=[raw_dose], y=[0.5], mode='markers+text', name='Raw Dose',
         marker=dict(size=12), text=['Raw'], textposition='bottom center'
@@ -285,57 +209,84 @@ with tabs[2]:
         x=[adjusted_dose], y=[0.5], mode='markers+text', name='Adjusted Dose',
         marker=dict(size=12), text=['Adjusted'], textposition='top center'
     ))
-
+    
     fig.update_layout(
         xaxis=dict(title="Dose (mSv)", range=[0, thresholds[-1]]),
-        yaxis=dict(visible=False), title="Radiation Dose vs. Biological Risk",
+        yaxis=dict(visible=False),
+        title="Radiation Dose vs. Biological Risk",
         height=300, margin=dict(t=40, b=40), showlegend=True
     )
-
+    
     st.plotly_chart(fig, use_container_width=True)
 
-    # Table: Organ-specific susceptibility
+    # Enhanced Table: Organ-specific susceptibility with treatments and research
     st.subheader("Organ Susceptibility (Generalized)")
+    
     df = pd.DataFrame({
         "Organ": ["Bone Marrow", "GI Tract", "Skin", "Brain", "Reproductive Organs"],
         "Effect at ≥50 mSv": [
-            "Reduced blood cell count", "Nausea, diarrhea", "Burns, hair loss",
-            "Cognitive impairment", "Sterility"
+            "Reduced blood cell count",
+            "Nausea, diarrhea",
+            "Burns, hair loss",
+            "Cognitive impairment",
+            "Sterility"
+        ],
+        "Possible Treatment / Mitigation": [
+            "Bone marrow transplant, G-CSF therapy",
+            "Hydration, antiemetics, gut microbiota restoration",
+            "Topical steroids, wound care, regenerative creams",
+            "Neuroprotective agents, cognitive therapy",
+            "Hormone therapy, sperm/egg preservation"
+        ],
+        "Related Research": [
+            "[NCBI](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4368524/)",
+            "[NIH](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC2861979/)",
+            "[MDPI](https://www.mdpi.com/2072-6694/13/14/3458)",
+            "[Nature](https://www.nature.com/articles/s41598-019-42045-3)",
+            "[Springer](https://link.springer.com/article/10.1007/s11154-021-09672-2)"
         ]
     })
-    st.dataframe(df)
+    
+    st.markdown("Hover or click the links in the 'Related Research' column for more information.")
+    st.dataframe(df, use_container_width=True)
+
     
 # Tab 4: Effects on Electronics
 with tabs[3]:
     st.subheader("💻 Effects of Cosmic Radiation on Electronics")
 
-    # Inputs
+    # --- Inputs ---
+    mission_profile = st.selectbox("🛰 Mission Environment", ["ISS (LEO)", "Lunar Orbit", "Mars Transit", "Deep Space"])
     duration = st.slider("🕒 Mission Duration (days)", 1, 1000, 180)
     shielding = st.selectbox("🛡️ Shielding Level", ["None", "Light", "Heavy"])
     sensitivity = st.selectbox("📦 Electronics Sensitivity", ["Standard", "Hardened", "Critical"])
 
-    # Sensitivity factors
+    # --- Mission profile base SEU rate (mocked SPENVIS/ESA data in Ups/day) ---
+    mission_base_rates = {
+        "ISS (LEO)": 0.0005,
+        "Lunar Orbit": 0.002,
+        "Mars Transit": 0.004,
+        "Deep Space": 0.006
+    }
+    base_seu_rate = mission_base_rates[mission_profile]
+
+    # --- Sensitivity and Shielding Modifiers ---
     sensitivity_factor = {
         "Standard": 1.0,
         "Hardened": 0.5,
         "Critical": 2.0
     }
-
-    # Shielding effectiveness
     shielding_factor = {
         "None": 1.0,
         "Light": 0.6,
         "Heavy": 0.3
     }
 
-    # Base SEU rate per day (mock value)
-    base_seu_rate = 0.002  # Ups/day
-
-    # Calculate adjusted SEU rate
+    # --- Adjusted SEU Rate & Total SEUs ---
     adjusted_rate = base_seu_rate * sensitivity_factor[sensitivity] * shielding_factor[shielding]
     total_seus = adjusted_rate * duration
 
-    # Categorize risk
+    # --- Risk Categorization ---
     if total_seus < 1:
         risk = "Low"
         color = "green"
@@ -349,37 +300,22 @@ with tabs[3]:
     st.metric("📉 Estimated SEUs", f"{total_seus:.2f}")
     st.success(f"⚠️ Failure Risk Level: {risk}")
 
-    # Visualization: Shielding vs SEU Rate
-    import matplotlib.pyplot as plt
-
+    # --- SEU Rate vs Shielding ---
     st.subheader("📊 SEU Rate vs Shielding")
 
     levels = ["None", "Light", "Heavy"]
     rates = [base_seu_rate * sensitivity_factor[sensitivity] * shielding_factor[lev] * duration for lev in levels]
 
-    fig, ax = plt.subplots()
-    ax.bar(levels, rates, color=['red', 'orange', 'green'])
-    ax.set_ylabel("Total SEUs (bit flips)")
-    ax.set_title("Effect of Shielding on SEU Risk")
-    st.pyplot(fig)
+    fig1, ax1 = plt.subplots()
+    ax1.bar(levels, rates, color=['red', 'orange', 'green'])
+    ax1.set_ylabel("Total SEUs (bit flips)")
+    ax1.set_title(f"Effect of Shielding on SEU Risk ({mission_profile})")
+    st.pyplot(fig1)
 
-    # Explanation
-    st.markdown("""
-    Cosmic rays, particularly high-energy protons and heavy ions, can disrupt electronics in space.  
-    These **Single Event Upsets (SEUs)** can cause:
-    - Memory bit flips
-    - Logic faults
-    - Temporary or permanent device failure
-
-    **Radiation hardening** and **shielding** are key to reducing these effects in space missions.
-    """)
-
-
-    #Monte Carlo simulation of 1000 devices and the effect on them
-    
+    # --- Monte Carlo Distribution ---
     st.subheader("🎲 Monte Carlo Simulation (1000 Devices)")
     simulated_failures = np.random.normal(loc=total_seus, scale=0.2 * total_seus, size=1000)
-    simulated_failures = np.clip(simulated_failures, 0, None)  # no negative SEUs
+    simulated_failures = np.clip(simulated_failures, 0, None)
 
     fig2, ax2 = plt.subplots()
     ax2.hist(simulated_failures, bins=30, color='purple', edgecolor='black')
@@ -388,7 +324,29 @@ with tabs[3]:
     ax2.set_ylabel("Number of Devices")
     st.pyplot(fig2)
 
-    st.caption("Simulates variation in SEU impact across 1000 similar devices.")
+    # --- Real-Time Failure Accumulation---
+    st.subheader("📈 Estimated SEU Accumulation Over Time")
+    days = np.arange(1, duration + 1)
+    accumulated_seus = adjusted_rate * days
+
+    fig3, ax3 = plt.subplots()
+    ax3.plot(days, accumulated_seus, color='crimson')
+    ax3.set_xlabel("Days")
+    ax3.set_ylabel("Cumulative SEUs")
+    ax3.set_title("Projected Failure Growth Over Mission Duration")
+    st.pyplot(fig3)
+
+    # --- Description ---
+    st.markdown(f"""
+**Environment**: {mission_profile}  
+**Base SEU Rate**: {base_seu_rate:.4f} Ups/day (mocked NASA/ESA data)  
+**Sensitivity Mod**: ×{sensitivity_factor[sensitivity]}  
+**Shielding Mod**: ×{shielding_factor[shielding]}  
+
+Total expected SEUs are computed using environment- and hardware-specific radiation risk assumptions.  
+This model helps evaluate how electronics might behave in varied mission profiles.
+    """)
+
 
 
 # Tab 5: CR Data Explorer
@@ -396,12 +354,12 @@ with tabs[4]:
     import numpy as np
     import matplotlib.pyplot as plt
 
-    st.subheader("📈 Cosmic Ray Data Explorer")
+    st.subheader("Cosmic Ray Data Explorer")
     st.markdown("Explore how different particles behave over energy ranges using mock spectra.")
 
     # Dropdowns for user input
-    source = st.selectbox("🔬 Select Data Source", ["AMS-02", "Voyager 1", "Mock Data"])
-    particle = st.selectbox("🧪 Select Particle Type", ["Protons", "Helium Nuclei", "Iron Nuclei"])
+    source = st.selectbox("Select Data Source", ["AMS-02", "Voyager 1", "Mock Data"])
+    particle = st.selectbox("Select Particle Type", ["Protons", "Helium Nuclei", "Iron Nuclei"])
 
     # Generate sample spectra (mock data)
     energy = np.logspace(0.1, 3, 50)  # MeV range
@@ -429,12 +387,12 @@ with tabs[4]:
 
     # Description
     st.markdown("""
-    📡 **Cosmic Ray Spectra** represent the distribution of particle flux over different energies.
+    **Cosmic Ray Spectra** represent the distribution of particle flux over different energies.
 
     These spectra vary based on:
-    - ☀️ Source (e.g., solar, galactic, extragalactic)
-    - 🧬 Particle type (proton, helium, iron, etc.)
-    - 🌍 Location (Earth orbit, interstellar space, etc.)
+    - Source (e.g., solar, galactic, extragalactic)
+    - Particle type (proton, helium, iron, etc.)
+    - Location (Earth orbit, interstellar space, etc.)
 
     Real data from **AMS-02**, **Voyager**, and **CRDB** can be integrated in future releases.
     """)
@@ -443,21 +401,25 @@ with tabs[4]:
 with tabs[5]:
     import matplotlib.pyplot as plt
     import numpy as np
-    import pandas as pd
 
     st.subheader("🛰️ Space Mission Radiation Dose Comparator")
 
     # Predefined missions
     missions = ["ISS (LEO)", "Lunar Orbit", "Lunar Surface", "Mars Transit", "Deep Space"]
     daily_doses = [0.3, 0.5, 1.0, 1.8, 2.5]  # mSv/day (based on NASA data ranges)
+    durations = {
+        "Short (30 days)": 30,
+        "Medium (180 days)": 180,
+        "Long (900 days)": 900
+    }
 
-    # 🔄 Replacing dropdown with a slider for custom duration
-    days = st.slider("🕒 Select Mission Duration (days)", min_value=1, max_value=1000, value=180, step=1)
+    duration_choice = st.selectbox("🕒 Mission Duration", list(durations.keys()))
+    days = durations[duration_choice]
 
-    # Compute total doses
     total_doses = [dose * days for dose in daily_doses]
 
     # Display table
+    import pandas as pd
     df = pd.DataFrame({
         "Mission": missions,
         "Daily Dose (mSv)": daily_doses,
@@ -467,6 +429,7 @@ with tabs[5]:
 
     # Plot
     st.subheader("📊 Total Radiation Dose per Mission")
+
     fig, ax = plt.subplots()
     bars = ax.bar(missions, total_doses, color="mediumslateblue")
     ax.set_ylabel("Total Dose (mSv)")
@@ -483,17 +446,45 @@ with tabs[5]:
 - A **1 Sv dose** is considered to increase lifetime cancer risk by ~5%.
 
 This tool helps in comparing the risk factor across different mission environments.
-    """)
-
+    """) 
 # Tab 7: Space Weather
 with tabs[6]:
     import requests
     import datetime
     import matplotlib.pyplot as plt
+    import pandas as pd
+    import folium
+    from streamlit_folium import folium_static
 
     st.subheader("🌞 Real-Time Space Weather Monitor")
 
-    # --- Proton Flux (≥10 MeV) ---
+    # --- Solar Flare Map (Mocked Locations) ---
+    st.markdown("### ☀️ Solar Flare Activity Map")
+    st.info("Note: Solar flare positions shown are mock data for visualization purposes only. Real solar flare coordinates are not provided in GOES public feeds.")
+
+    flare_map = folium.Map(location=[0, 0], zoom_start=2, tiles="CartoDB positron")
+    mock_flares = [
+        {"lat": 10.5, "lon": 75.3, "class": "M"},
+        {"lat": -8.2, "lon": -60.1, "class": "C"},
+        {"lat": 23.7, "lon": 140.9, "class": "X"},
+        {"lat": -15.1, "lon": 30.4, "class": "C"},
+        {"lat": 5.4, "lon": -120.3, "class": "M"}
+    ]
+    flare_colors = {"C": "green", "M": "orange", "X": "red"}
+
+    for flare in mock_flares:
+        folium.CircleMarker(
+            location=[flare["lat"], flare["lon"]],
+            radius=7,
+            popup=f"Class {flare['class']} Flare",
+            color=flare_colors[flare["class"]],
+            fill=True,
+            fill_opacity=0.8
+        ).add_to(flare_map)
+
+    folium_static(flare_map)
+
+    # --- Proton Flux ---
     st.markdown("### ☢️ Proton Flux (≥10 MeV)")
     try:
         url_proton = "https://services.swpc.noaa.gov/json/goes/primary/integral-protons-3-day.json"
@@ -516,7 +507,7 @@ with tabs[6]:
     except:
         st.error("Could not load proton flux data.")
 
-    # --- X-Ray Flux (Solar Flares) ---
+    # --- X-Ray Flux ---
     st.markdown("### ⚡ X-Ray Flux (Solar Flares)")
     try:
         url_xray = "https://services.swpc.noaa.gov/json/goes/primary/xrays-3-day.json"
@@ -540,42 +531,33 @@ with tabs[6]:
     except:
         st.error("Could not load X-ray data.")
 
-    # --- Kp Index (Geomagnetic Storms) ---
+    # --- Kp Index ---
     st.markdown("### 🧭 Kp Index (Geomagnetic Storms)")
-    
-     # --- Kp Index Plot---
-import streamlit as st
-import pandas as pd
+    try:
+        url_kp = "https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json"
+        raw_data = requests.get(url_kp).json()
+        header = raw_data[0]
+        rows = raw_data[1:]
 
-st.subheader("🧭 Geomagnetic Kp Index (From Local JSON File)")
+        df_kp = pd.DataFrame(rows, columns=header)
+        df_kp["time_tag"] = pd.to_datetime(df_kp["time_tag"])
+        df_kp["Kp"] = pd.to_numeric(df_kp["Kp"], errors='coerce')
 
-# ✅ Use escaped path or raw string
-kp_file_path = r"C:\Users\zeba\Downloads\planetary_k_index_1m.json"
+        fig, ax = plt.subplots()
+        ax.plot(df_kp["time_tag"], df_kp["Kp"], color='blue')
+        ax.set_title("NOAA Kp Index (Last 3 Days)")
+        ax.set_ylabel("Kp Value")
+        ax.set_xlabel("UTC Time")
+        ax.grid(True)
+        st.pyplot(fig)
 
-try:
-    # Load JSON file
-    kp_data = pd.read_json(kp_file_path)
-
-    # If it's a list of dicts (like NOAA format), convert to DataFrame
-    if isinstance(kp_data.iloc[0], dict):
-        kp_df = pd.DataFrame(kp_data.tolist())
-    else:
-        kp_df = kp_data
-
-    # Ensure correct column names (adjust if different)
-    kp_df['time_tag'] = pd.to_datetime(kp_df['time_tag'], errors='coerce')
-    kp_df['Kp'] = pd.to_numeric(kp_df['Kp'], errors='coerce')
-
-    kp_df = kp_df.dropna(subset=['time_tag', 'Kp'])
-    kp_df = kp_df.sort_values('time_tag')
-
-    # Plot
-    st.line_chart(kp_df.rename(columns={'time_tag': 'index'}).set_index('index')[['Kp']])
-
-except FileNotFoundError:
-    st.error(f"File not found: `{kp_file_path}`. Please check the path.")
-except Exception as e:
-    st.warning(f"Error loading Kp index data: {e}")
+        latest_kp = df_kp["Kp"].iloc[-1]
+        if latest_kp >= 5:
+            st.warning(f"🌐 Geomagnetic storm conditions likely (Kp = {latest_kp})")
+        else:
+            st.success(f"✅ Geomagnetic field is quiet (Kp = {latest_kp})")
+    except Exception as e:
+        st.error(f"Could not load Kp index data: {e}")
 
 # Tab 8: Research Library
 with tabs[7]:
@@ -585,12 +567,11 @@ with tabs[7]:
     Browse handpicked research papers on cosmic rays, radiation health, and space missions.
     """)
 
-    # Example static paper list
     import pandas as pd
 
     papers = pd.DataFrame({
         "Title": [
-            "Comparative study of effects of cosmic rays on the earth’s atmospheric processes ",
+            "Comparative study of effects of cosmic rays on the earth’s atmospheric processes",
             "Beyond Earthly Limits: Protection against Cosmic Radiation through Biological Response Pathways",
             "The effect of cosmic rays on biological systems",
             "Microprocessor technology and single event upset susceptibility",
@@ -611,7 +592,18 @@ with tabs[7]:
             "https://www.iosrjournals.org/iosr-jece/papers/Vol.%2019%20Issue%202/Ser-1/D1902013337.pdf"
         ],
         "Year": [2020, 2024, 2012, 1996, 2024],
-        "Tags": ["Atmosphere", "Biology", "Biology", "Electronics", "Electronics"]
+        "Tags": ["Atmosphere", "Biology", "Biology", "Electronics", "Electronics"],
+        "Summary": [
+            "This paper analyzes how cosmic rays interact with the Earth’s atmosphere, influencing weather patterns and climate variability. It compares different models to understand the impact of cosmic ray flux on atmospheric ionization and cloud formation.",
+            
+            "This paper explores biological pathways and protective measures against harmful cosmic radiation exposure. It reviews cellular responses, genetic impacts, and adaptive mechanisms found in various organisms. The study emphasizes the importance of biological shielding for deep-space missions and human health.",
+            
+            "Examines biological impacts of cosmic ray exposure.",
+            
+            "The study investigates how microprocessor circuits are vulnerable to single event upsets (SEUs) caused by cosmic rays. It presents test results and real-case observations from satellite missions. Recommendations for radiation-hardening techniques and fault-tolerant designs are provided.",
+             
+            "This paper discusses the adverse effects of cosmic rays on satellite communication systems. It explains how high-energy particles can induce bit errors and signal loss in satellite electronics. Mitigation strategies and design considerations are also highlighted to enhance system reliability."
+        ]
     })
 
     tag = st.selectbox("Filter by Tag", ["All", "Atmosphere", "Biology", "Electronics"])
@@ -622,14 +614,23 @@ with tabs[7]:
 
     st.dataframe(filtered)
 
-    # Add download example
-    st.markdown("### 📎 Example Paper Download")
+    st.markdown("### Paper Summaries")
+    for _, row in filtered.iterrows():
+        st.write(f"**{row['Title']}**")
+        st.write(f"*Authors:* {row['Authors']}")
+        st.write(f"*Year:* {row['Year']}")
+        st.write(f"*Summary:* {row['Summary']}")
+        st.write(f"[Read Paper]({row['Link']})")
+        st.write("---")
+
+    st.markdown("### Example Paper Download")
     st.download_button(
         "Download Example Paper (PDF)",
         data=b"%PDF-1.4 ... (fake content)",
         file_name="example_paper.pdf",
         mime="application/pdf"
     )
+
 # Tab 9: cosmic ray data explorerwith tabs[8]:
 with tabs[8]:
     st.subheader("📤 Upload & Analyze Your Own Cosmic Ray Dataset")
@@ -642,7 +643,7 @@ with tabs[8]:
                 df = pd.read_csv(uploaded_file)
                 if 'Energy' in df.columns and 'Flux' in df.columns:
                     st.success("File uploaded and read successfully!")
-                    st.markdown("### 📄 Preview of Uploaded Data")
+                    st.markdown("### Preview of Uploaded Data")
                     st.dataframe(df.head())
                     log_scale = st.checkbox("Log scale", value=True)
                     fig, ax = plt.subplots()
@@ -660,7 +661,8 @@ with tabs[8]:
             except Exception as e:
                 st.error(f"Error reading file: {e}")
 
-# ========== FOOTER ==========
+
+# FOOTER
 st.markdown(f"""
 ---
 <p style='text-align: center; color: gray'>
