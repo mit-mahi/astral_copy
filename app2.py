@@ -98,8 +98,6 @@ with tabs[0]:
 # =================TAB 2: Live Cosmic Ray Shower Map (mock)=================
 with tabs[1]:
     st.subheader("Live Cosmic Ray Shower Map")
-
-    
     # ====intensity filter====
     st.markdown("### 🔍 Filter Shower Events")
     intensity_filter = st.multiselect(
@@ -107,12 +105,9 @@ with tabs[1]:
         options=["Low", "Moderate", "High"],
         default=["Low", "Moderate", "High"]
     )
-
     
     # ===plot the map===
     m = folium.Map(location=[0, 0], zoom_start=2, tiles="CartoDB positron")
-
- 
 
     # ===plotting points===
     for _ in range(25):
@@ -124,9 +119,6 @@ with tabs[1]:
 
     # ===show map===
     folium_static(m)
-
-
-   
 
 # Tab 3: Biological Effects
 with tabs[2]:
