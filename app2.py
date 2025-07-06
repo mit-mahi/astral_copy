@@ -98,6 +98,18 @@ with tabs[0]:
 # =================TAB 2: Live Cosmic Ray Shower Map (mock)=================
 with tabs[1]:
     st.subheader("Live Cosmic Ray Shower Map")
+
+    df = pd.read_csv("data/realtime_sort.txt", sep=";", comment="#", header=None)  # Since it's already comma-separated
+    
+    # Add column names
+    df.columns = ["Timestamp", "Station", "Value"]
+
+    # Save as CSV
+    df.to_csv("data/realtime_sort.csv", index=False)
+
+    df = pd.read_csv("data/realtime_sort.csv")  # Load the saved CSV
+    print(df.head())  # Display first 5 rows
+    
     # ====intensity filter====
     st.markdown("### 🔍 Filter Shower Events")
     intensity_filter = st.multiselect(
