@@ -132,6 +132,9 @@ with tabs[1]:
     # ===show map===
     folium_static(m)
 
+    df = pd.read_csv("data/realtime_sort.csv")  # Load the saved CSV
+    print(df.head())  # Display first 5 rows
+    
 # Tab 3: Biological Effects
 with tabs[2]:
     import os
