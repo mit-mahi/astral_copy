@@ -173,7 +173,7 @@ with tabs[1]:
     }
 
     # ===plotting on map===
-    for station, count in station_counts.(items):
+    for station, count in station_counts.items():
         if station in station_coords and pd.notna(count):
             lat, lon = station_coords[station]
             color = get_color(count)
