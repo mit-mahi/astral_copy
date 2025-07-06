@@ -138,26 +138,11 @@ with tabs[1]:
 
 #######
 
-if df is not None:
-    st.success(f"Fetched {len(df)} data points from NMDB!")
-    
-    # Optional: Filter to recent stations or highest activity
-    recent = df[df["datetime"] > pd.Timestamp.now() - pd.Timedelta("3 days")]
-
-    st.dataframe(recent.head())
-
-    # Optional: Plot counts for 1 or more stations
-    import plotly.express as px
-    fig = px.line(recent, x="datetime", y="count", color="station",
-                  title="Cosmic Ray Count (Pressure Corrected) – 1-hour Resolution")
-    st.plotly_chart(fig, use_container_width=True)
-else:
-    st.warning("No live data available. Using fallback if needed.")
 
     
 ######
     
-    st.write("NMDB DataFrame shape:", df.shape)
+    st.write("NMDB DataFrame shape:", def.shape)
 
     # ===plotting points===
     for _ in range(25):
