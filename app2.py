@@ -112,9 +112,11 @@ with tabs[1]:
     # ===plot the map===
     m = folium.Map(location=[0, 0], zoom_start=2, tiles="CartoDB positron")
 
+     # ===show map===
+    folium_static(m)
 
     # ===fetching the data===
-    nmdb_url = "http://nest.nmdb.eu/draw_graph.php?formchk=1&stations[]=ICRB&stations[]=ICRO&stations[]=ATHN&stations[]=CALM&stations[]=AATB&stations[]=BKSN&stations[]=JUNG&stations[]=JUNG1&stations[]=LMKS&stations[]=DRBS&stations[]=KIEL2&stations[]=YKTK&stations[]=KERG&stations[]=CALG&stations[]=OULU&stations[]=APTY&stations[]=TXBY&stations[]=FSMT&stations[]=INVK&stations[]=NAIN&stations[]=PWNK&stations[]=THUL&stations[]=MWSB&stations[]=MWSN&stations[]=SOPB&stations[]=SOPO&stations[]=TERA&tabchoice=revori&dtype=corr_for_pressure&tresolution=60&yunits=1&date_choice=last&last_days=59&last_label=days_label&output=ascii"
+    #nmdb_url = "http://nest.nmdb.eu/draw_graph.php?formchk=1&stations[]=ICRB&stations[]=ICRO&stations[]=ATHN&stations[]=CALM&stations[]=AATB&stations[]=BKSN&stations[]=JUNG&stations[]=JUNG1&stations[]=LMKS&stations[]=DRBS&stations[]=KIEL2&stations[]=YKTK&stations[]=KERG&stations[]=CALG&stations[]=OULU&stations[]=APTY&stations[]=TXBY&stations[]=FSMT&stations[]=INVK&stations[]=NAIN&stations[]=PWNK&stations[]=THUL&stations[]=MWSB&stations[]=MWSN&stations[]=SOPB&stations[]=SOPO&stations[]=TERA&tabchoice=revori&dtype=corr_for_pressure&tresolution=60&yunits=1&date_choice=last&last_days=59&last_label=days_label&output=ascii"
 
     def fetch_nmdb_multi_station(url):
         try:
@@ -155,8 +157,7 @@ with tabs[1]:
         color = {'Low': 'green', 'Moderate': 'orange', 'High': 'red'}[intensity]
         folium.CircleMarker(location=[lat, lon], radius=6, popup=f"Shower: {intensity}", color=color,
                             fill=True, fill_opacity=0.7).add_to(m)
-    # ===show map===
-    folium_static(m)
+   
 
 # Tab 3: Biological Effects
 with tabs[2]:
