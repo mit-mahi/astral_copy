@@ -132,7 +132,7 @@ with tabs[1]:
     #data_data = data_data.astype({col: 'float' for col in data_data.columns if col != "TimeStamp"})
     latest = data_data.iloc[-1]
     latest_time = latest["TimeStamp"]    
-    station_counts= atest.drop("TimeStamp").to_dict()
+    station_counts= latest.drop("TimeStamp").to_dict()
 
     # ===color based on intensity===
     def get_color(count):
