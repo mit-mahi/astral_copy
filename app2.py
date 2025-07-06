@@ -125,6 +125,15 @@ with tabs[1]:
 
     #st.write("Station counts (latest row):", station_counts)
 
+    def get_intensity_level(count):
+    if pd.isna(count):
+        return "No Data"
+    elif count > 200:
+        return "High"
+    elif count > 200 and cout < 100:
+        return "Moderate"
+    else:
+        return "Low"
     # ===color based on intensity===
     def get_color(count):
         if count > 200:
@@ -170,6 +179,18 @@ with tabs[1]:
     for station, count in station_counts.items():
         if station in station_coords and pd.notna(count):
             lat, lon = station_coords[station]
+            intensity = get_intensity_level(count)
+            if intensity not in intensity_options:
+                continue  # Skip this station if user has filtered it out
+
+            if pd.isna(count):
+                color = "gray"
+            else:
+                color = {
+                        "Low": "green",
+                        "Moderate": "orange",
+                        "High": "red"
+                    }.get(intensity, "gray")
             color = get_color(count)
             folium.CircleMarker(
                 location=[lat, lon],
