@@ -96,7 +96,7 @@ with tabs[0]:
 with tabs[1]:
     st.subheader("Live Cosmic Ray Shower Map")
     st.markdown("### 🔍 Filter Shower Events")
-      intensity_filter = st.multiselect(
+    intensity_filter = st.multiselect(
         "Select intensity levels to display",
         options=["Low", "Moderate", "High"],
         default=["Low", "Moderate", "High"]
