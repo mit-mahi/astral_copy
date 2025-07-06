@@ -136,12 +136,7 @@ with tabs[1]:
     ]
 
     # =====Create the map====
-    m = folium.Map(
-        location=[20, 0],
-        zoom_start=2,
-        tiles="https://stamen-tiles.a.ssl.fastly.net/terrain/{z}/{x}/{y}.png",
-        attr="Map tiles by Stamen Design, under CC BY 3.0. Data by OpenStreetMap, under ODbL."
-    )
+    m = folium.Map(location=[0, 0], zoom_start=2, tiles="CartoDB positron")
 
     # =====Plot filtered markers=====
     color_map = {'Low': 'green', 'Moderate': 'orange', 'High': 'red'}
