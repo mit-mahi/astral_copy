@@ -134,11 +134,11 @@ with tabs[1]:
     # ===color based on intensity===
     def get_color(count):
         if count > 5500:
-        return 'red'
-    elif count > 5000:
-        return 'orange'
-    else:
-        return 'green'
+            return 'red'
+        elif count > 5000:
+            return 'orange'
+        else:
+            return 'green'
 
     # ===plotting points===
     station_coords = {
