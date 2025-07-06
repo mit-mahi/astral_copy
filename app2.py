@@ -142,7 +142,7 @@ with tabs[1]:
     
 ######
     
-    st.write("NMDB DataFrame shape:", def.shape)
+    st.write("NMDB DataFrame shape:", df.shape)
 
     # ===plotting points===
     for _ in range(25):
