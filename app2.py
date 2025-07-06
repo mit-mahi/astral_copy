@@ -96,6 +96,12 @@ with tabs[0]:
 with tabs[1]:
     st.subheader("Live Cosmic Ray Shower Map")
     st.markdown("### 🔍 Filter Shower Events")
+      intensity_filter = st.multiselect(
+        "Select intensity levels to display",
+        options=["Low", "Moderate", "High"],
+        default=["Low", "Moderate", "High"]
+    )
+
     m = folium.Map(location=[0, 0], zoom_start=2, tiles="CartoDB positron")
     for _ in range(25):
         lat, lon = random.uniform(-60, 60), random.uniform(-180, 180)
