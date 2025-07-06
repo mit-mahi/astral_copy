@@ -183,13 +183,22 @@ with tabs[1]:
                 location=[lat, lon],
                 radius=7,
                 color=color,
-                popup=f"{station}\n{count}\ndate\ntime",
+                popup=f"Station: {station}\nRelative Neutron Count: {count}\nDate: \nTime: ",
                 fill=True,
                 fill_opacity=0.7
             ).add_to(m)
 
     # ===show map===
     folium_static(m)
+
+    for station, count in station_counts.items():
+        if station not in station_coords:
+            st.write(f"❌ Skipped (no coordinates): {station}")
+        elif pd.isna(count):
+            st.write(f"⚠️ Skipped (no data): {station}")
+        else:
+            st.write(f"✅ Plotted: {station}")
+        # Add marker here
     
 # Tab 3: Biological Effects
 with tabs[2]:
