@@ -98,8 +98,6 @@ with tabs[0]:
 # =================TAB 2: Live Cosmic Ray Shower Map (mock)=================
 with tabs[1]:
     st.subheader("Live Cosmic Ray Shower Map")
-
-    
     
     # ====intensity filter====
     st.markdown("### 🔍 Filter Shower Events")
@@ -134,13 +132,13 @@ with tabs[1]:
     latest_time = latest["TimeStamp"]    
     station_counts= latest.drop("TimeStamp").to_dict()
 
-    st.write("Station counts (latest row):", station_counts)
+    #st.write("Station counts (latest row):", station_counts)
 
     # ===color based on intensity===
     def get_color(count):
-        if count > 5500:
+        if count > 200:
             return 'red'
-        elif count > 5000:
+        elif count < 200 and count > 100:
             return 'orange'
         else:
             return 'green'
