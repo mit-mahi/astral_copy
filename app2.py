@@ -101,7 +101,7 @@ with tabs[1]:
     
     # ====intensity filter====
     st.markdown("### 🔍 Filter Shower Events")
-    intensity_filter = st.multiselect(
+    intensity_options = st.multiselect(
         "Select intensity levels to display",
         options=["Low", "Moderate", "High"],
         default=["Low", "Moderate", "High"]
