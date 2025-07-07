@@ -130,7 +130,7 @@ with tabs[1]:
             return "No Data"
         elif count > 200:
             return "High"
-        elif count > 200 and count < 100:
+        elif count < 200 and count > 100:
             return "Moderate"
         else:
             return "Low"
