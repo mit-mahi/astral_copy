@@ -203,17 +203,6 @@ with tabs[1]:
 
     # ===show map===
     folium_static(m)
-
-# there exist 4 pairs of stations such that their location overlaps, so they cant be seen abhi
-
-    #for station, count in station_counts.items():
-     #   lat, lon = station_coords[station]
-     #   if station not in station_coords:
-      #      st.write(f"❌ Skipped (no coordinates): {station}")
-       # elif pd.isna(count):
-        #    st.write(f"⚠️ Skipped (no data): {station}")
-        #else:
-         #   st.write(f"✅ Plotted: {station} at ({lat}, {lon})")
     
 # Tab 3: Biological Effects
 with tabs[2]:
