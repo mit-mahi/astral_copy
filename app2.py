@@ -278,7 +278,7 @@ with tabs[2]:
     image_path = image_dir / img_file
 
     try:
-        st.image(str(image_path), caption=f"Impact Visualization ({adjusted_dose:.0f} mSv)", use_column_width=True)
+        st.image(str(image_path), caption=f"Impact Visualization ({adjusted_dose:.0f} mSv)", use_container_width=True)
         st.caption("Disclaimer: Conceptual illustration only.")
     except Exception as e:
         st.error(f"Could not load image: {e}\nCheck that 'images' folder exists alongside this script and contains {img_file}.")
